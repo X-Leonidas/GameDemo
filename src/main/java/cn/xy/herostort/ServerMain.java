@@ -43,6 +43,8 @@ public class ServerMain {
                         new HttpServerCodec(),
                         new HttpObjectAggregator(65535),
                         new WebSocketServerProtocolHandler("/websocket"),
+                        new GameMsgDecoder(),
+                        new GameMsgEncoder(),
                         new GameMsgHandler()
                 );
             }
@@ -58,7 +60,11 @@ public class ServerMain {
             //关闭端口
             f.channel().closeFuture().sync();
         } catch (InterruptedException e) {
+            logger.error("错误信息: {}"+e.getMessage());
             e.printStackTrace();
+        }finally {
+            boos.shutdownGracefully();
+            work.shutdownGracefully();
         }
 
 
