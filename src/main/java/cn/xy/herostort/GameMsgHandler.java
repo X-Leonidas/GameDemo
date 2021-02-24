@@ -3,14 +3,12 @@ package cn.xy.herostort;
 import cn.xy.herostort.msg.GameMsgProtocol;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.channel.group.ChannelGroup;
-import io.netty.channel.group.DefaultChannelGroup;
-import io.netty.util.concurrent.GlobalEventExecutor;
+import io.netty.util.AttributeKey;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.HashMap;
-import java.util.Map;
+import javax.swing.*;
+import java.util.Collection;
 
 /**
  * @author XiangYu
@@ -20,21 +18,6 @@ public class GameMsgHandler extends SimpleChannelInboundHandler<Object> {
 
     private static Logger logger = LogManager.getLogger(GameMsgHandler.class);
 
-
-    /**
-     * 信道组, 注意这里一定要用 static,
-     * 否则无法实现群发
-     */
-    static private final ChannelGroup _channelGroup = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
-
-
-
-    /**
-     * 用户字典
-     */
-    static private final Map<Integer, User> _userMap = new HashMap<>();
-
-
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
         if (null == ctx) {
@@ -43,14 +26,45 @@ public class GameMsgHandler extends SimpleChannelInboundHandler<Object> {
 
         try {
             super.channelActive(ctx);
-            _channelGroup.add(ctx.channel());
+            Broadcaster.addChannel(ctx.channel());
         } catch (Exception ex) {
             // 记录错误日志
             logger.error(ex.getMessage(), ex);
         }
     }
 
+    @Override
+    public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
+        if (null == ctx) {
+            return;
+        }
 
+
+        try {
+            super.handlerRemoved(ctx);
+
+            Integer userId = (Integer) ctx.channel().attr(AttributeKey.valueOf("userId")).get();
+
+
+            if (null == userId) {
+                return;
+            }
+
+            UserManager.removeUserBuUserId(userId);
+            Broadcaster.removeChannel(ctx.channel());
+
+            GameMsgProtocol.UserQuitResult.Builder requestBuilder = GameMsgProtocol.UserQuitResult.newBuilder();
+            requestBuilder.setQuitUserId(userId);
+
+            GameMsgProtocol.UserQuitResult newResult = requestBuilder.build();
+
+            Broadcaster.broadcast(newResult);
+        }catch (Exception ex){
+            logger.error(ex.getMessage(),ex);
+        }
+
+
+    }
 
     @Override
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, Object msg) {
@@ -76,7 +90,11 @@ public class GameMsgHandler extends SimpleChannelInboundHandler<Object> {
                 User newUser = new User();
                 newUser.setUserId(userId);
                 newUser.setHeroAvatar(heroAvatar);
-                _userMap.putIfAbsent(userId, newUser);
+
+                UserManager.addUser(newUser);
+                
+                // 将用户 Id 保存至 Session
+                channelHandlerContext.channel().attr(AttributeKey.valueOf("userId")).set(userId);
 
 
                 GameMsgProtocol.UserEntryResult.Builder resultBulider = GameMsgProtocol.UserEntryResult.newBuilder();
@@ -86,13 +104,16 @@ public class GameMsgHandler extends SimpleChannelInboundHandler<Object> {
 
                 GameMsgProtocol.UserEntryResult newResult = resultBulider.build();
 
-                _channelGroup.writeAndFlush(newResult);
+                Broadcaster.broadcast(newResult);
 
-            }else if(msg instanceof  GameMsgProtocol.WhoElseIsHereCmd){
+            } else if (msg instanceof GameMsgProtocol.WhoElseIsHereCmd) {
                 GameMsgProtocol.WhoElseIsHereResult.Builder resultBulider = GameMsgProtocol.WhoElseIsHereResult.newBuilder();
 
-                for (User currUser : _userMap.values()) {
-                    if(null  ==  currUser){
+                Collection<User> listUser = UserManager.listUser();
+
+
+                for (User currUser : listUser) {
+                    if (null == currUser) {
                         continue;
                     }
                     GameMsgProtocol.WhoElseIsHereResult.UserInfo.Builder userInfoBuilder = GameMsgProtocol.WhoElseIsHereResult.UserInfo.newBuilder();
