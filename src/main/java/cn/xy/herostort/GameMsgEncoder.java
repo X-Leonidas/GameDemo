@@ -1,6 +1,5 @@
 package cn.xy.herostort;
 
-import cn.xy.herostort.msg.GameMsgProtocol;
 import com.google.protobuf.GeneratedMessageV3;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -12,7 +11,7 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * @author XiangYu
- * @create2021-02-22-15:52
+ * @create2021-02-22-15:52 消息编码器
  */
 public class GameMsgEncoder extends ChannelOutboundHandlerAdapter {
 
@@ -21,24 +20,18 @@ public class GameMsgEncoder extends ChannelOutboundHandlerAdapter {
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
 
-        if(null == ctx || null ==  msg){
+        if (null == ctx || null == msg) {
             return;
         }
         try {
-            if(!(msg instanceof GeneratedMessageV3)){
+            if (!(msg instanceof GeneratedMessageV3)) {
                 super.write(ctx, msg, promise);
                 return;
             }
-            int msgCode = -1;
+            int msgCode = GameMsgRecognizer.getMsgCodeByClazz(msg.getClass());
 
-            if(msg instanceof GameMsgProtocol.UserEntryResult){
-                msgCode  = GameMsgProtocol.MsgCode.USER_ENTRY_RESULT_VALUE;
-            }else if (msg instanceof GameMsgProtocol.WhoElseIsHereResult) {
-                msgCode = GameMsgProtocol.MsgCode.WHO_ELSE_IS_HERE_RESULT_VALUE;
-            } else if(msg instanceof  GameMsgProtocol.UserQuitResult){
-                msgCode = GameMsgProtocol.MsgCode.USER_QUIT_RESULT_VALUE;
-            }else{
-                logger.error("无法识别的消息类型，msgClazz = {}",msg.getClass().getSimpleName());
+            if (msgCode == -1) {
+                logger.error("无法识别的消息类型，msgClazz = {}", msg.getClass().getSimpleName());
                 super.write(ctx, msg, promise);
                 return;
             }
@@ -56,10 +49,9 @@ public class GameMsgEncoder extends ChannelOutboundHandlerAdapter {
             // 写出 ByteBuf
             BinaryWebSocketFrame outputFrame = new BinaryWebSocketFrame(byteBuf);
             super.write(ctx, outputFrame, promise);
-        }catch (Exception ex){
-            logger.error(ex.getMessage(),ex);
+        } catch (Exception ex) {
+            logger.error(ex.getMessage(), ex);
         }
-
 
 
     }

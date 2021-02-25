@@ -2,6 +2,7 @@ package cn.xy.herostort;
 
 import cn.xy.herostort.msg.GameMsgProtocol;
 import com.google.protobuf.GeneratedMessageV3;
+import com.google.protobuf.Message;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -11,7 +12,7 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * @author XiangYu
- * @create2021-02-22-15:10
+ * @create2021-02-22-15:10 消息解码器
  */
 public class GameMsgDecoder extends ChannelInboundHandlerAdapter {
 
@@ -36,41 +37,46 @@ public class GameMsgDecoder extends ChannelInboundHandlerAdapter {
 
             //解析消息
             BinaryWebSocketFrame inputFrame = (BinaryWebSocketFrame) msg;
-
             //字节缓存
             ByteBuf byteBuff = inputFrame.content();
-
             //读取长度
             byteBuff.readShort();
-
             //读取编号
             int msgCode = byteBuff.readShort();
-            //拿到消息体
 
+            //拿到消息体
             byte[] msgBody = new byte[byteBuff.readableBytes()];
             byteBuff.readBytes(msgBody);
-            //根据编号解析消息体
-            GeneratedMessageV3 cmd = null;
 
+            Message.Builder msgBuild = GameMsgRecognizer.getBuilderByMsgCode(msgCode);
+            Message cmd = null;
 
-            switch (msgCode) {
-                //用户进入发起向其他用户发起广播
-                case GameMsgProtocol.MsgCode.USER_ENTRY_CMD_VALUE:
-                    cmd = GameMsgProtocol.UserEntryCmd.parseFrom(msgBody);
-                    break;
-                case GameMsgProtocol.MsgCode.WHO_ELSE_IS_HERE_CMD_VALUE:
-                    cmd = GameMsgProtocol.WhoElseIsHereCmd.parseFrom(msgBody);
-                    break;
-                default:
-                    break;
+            if(null != msgBuild){
+                msgBuild.clear();
+                msgBuild.mergeFrom(msgBody);
+                cmd  =  msgBuild.build();
             }
 
+
+//            switch (msgCode) {
+//                //用户进入发起向其他用户发起广播
+//                case GameMsgProtocol.MsgCode.USER_ENTRY_CMD_VALUE:
+//                    cmd = GameMsgProtocol.UserEntryCmd.parseFrom(msgBody);
+//                    break;
+//                case GameMsgProtocol.MsgCode.WHO_ELSE_IS_HERE_CMD_VALUE:
+//                    cmd = GameMsgProtocol.WhoElseIsHereCmd.parseFrom(msgBody);
+//                    break;
+//                case GameMsgProtocol.MsgCode.USER_MOVE_TO_CMD_VALUE:
+//                    cmd = GameMsgProtocol.UserMoveToCmd.parseFrom(msgBody);
+//                default:
+//                    break;
+//            }
 
             if (null != cmd) {
                 ctx.fireChannelRead(cmd);
             }
-        }catch (Exception e){
-            logger.error(e.getMessage(),e);
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
         }
     }
 }

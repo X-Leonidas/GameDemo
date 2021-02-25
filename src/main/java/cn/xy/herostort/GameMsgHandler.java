@@ -1,13 +1,17 @@
 package cn.xy.herostort;
 
+import cn.xy.herostort.cmdhandler.ICmdHandler;
+import cn.xy.herostort.cmdhandler.UserEntryCmdHandler;
+import cn.xy.herostort.cmdhandler.WhoElseIsHereCmdHandler;
 import cn.xy.herostort.msg.GameMsgProtocol;
+import com.google.protobuf.GeneratedMessageV3;
+import com.google.protobuf.Message;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.AttributeKey;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.swing.*;
 import java.util.Collection;
 
 /**
@@ -38,18 +42,12 @@ public class GameMsgHandler extends SimpleChannelInboundHandler<Object> {
         if (null == ctx) {
             return;
         }
-
-
         try {
             super.handlerRemoved(ctx);
-
             Integer userId = (Integer) ctx.channel().attr(AttributeKey.valueOf("userId")).get();
-
-
             if (null == userId) {
                 return;
             }
-
             UserManager.removeUserBuUserId(userId);
             Broadcaster.removeChannel(ctx.channel());
 
@@ -79,59 +77,20 @@ public class GameMsgHandler extends SimpleChannelInboundHandler<Object> {
                 msg);
         try {
 
-
-            if (msg instanceof GameMsgProtocol.UserEntryCmd) {
-                GameMsgProtocol.UserEntryCmd cmd = (GameMsgProtocol.UserEntryCmd) msg;
-
-
-                int userId = cmd.getUserId();
-                String heroAvatar = cmd.getHeroAvatar();
-
-                User newUser = new User();
-                newUser.setUserId(userId);
-                newUser.setHeroAvatar(heroAvatar);
-
-                UserManager.addUser(newUser);
-                
-                // 将用户 Id 保存至 Session
-                channelHandlerContext.channel().attr(AttributeKey.valueOf("userId")).set(userId);
-
-
-                GameMsgProtocol.UserEntryResult.Builder resultBulider = GameMsgProtocol.UserEntryResult.newBuilder();
-
-                resultBulider.setUserId(userId);
-                resultBulider.setHeroAvatar(heroAvatar);
-
-                GameMsgProtocol.UserEntryResult newResult = resultBulider.build();
-
-                Broadcaster.broadcast(newResult);
-
-            } else if (msg instanceof GameMsgProtocol.WhoElseIsHereCmd) {
-                GameMsgProtocol.WhoElseIsHereResult.Builder resultBulider = GameMsgProtocol.WhoElseIsHereResult.newBuilder();
-
-                Collection<User> listUser = UserManager.listUser();
-
-
-                for (User currUser : listUser) {
-                    if (null == currUser) {
-                        continue;
-                    }
-                    GameMsgProtocol.WhoElseIsHereResult.UserInfo.Builder userInfoBuilder = GameMsgProtocol.WhoElseIsHereResult.UserInfo.newBuilder();
-
-                    userInfoBuilder.setUserId(currUser.getUserId());
-                    userInfoBuilder.setHeroAvatar(currUser.getHeroAvatar());
-
-                    resultBulider.addUserInfo(userInfoBuilder);
-
-                }
-
-
-                GameMsgProtocol.WhoElseIsHereResult newResult = resultBulider.build();
-
-                channelHandlerContext.writeAndFlush(newResult);
+            ICmdHandler<? extends GeneratedMessageV3> cmdHandler = CmdHandlerFactory.creat(msg.getClass());
+            if(null != cmdHandler){
+                cmdHandler.handle(channelHandlerContext,cast(msg));
             }
         } catch (Exception ex) {
             logger.error(ex.getMessage(), ex);
         }
+
+    }
+    static private <Tcmd extends GeneratedMessageV3> Tcmd cast(Object object){
+        if(null == object){
+            return  null;
+        }
+
+        return  (Tcmd)object;
     }
 }

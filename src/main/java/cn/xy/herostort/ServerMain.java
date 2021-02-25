@@ -23,6 +23,11 @@ public class ServerMain {
     private static Logger logger = LogManager.getLogger(ServerMain.class);
 
     public static void main(String[] args) {
+
+        //初始化
+        CmdHandlerFactory.init();
+        GameMsgRecognizer.intit();
+
         //创建group
         EventLoopGroup boos = new NioEventLoopGroup();
         EventLoopGroup work = new NioEventLoopGroup();
