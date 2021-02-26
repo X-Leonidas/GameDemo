@@ -3,7 +3,10 @@ package cn.xy.herostort;
 import cn.xy.herostort.msg.GameMsgProtocol;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.Message;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -12,6 +15,11 @@ import java.util.Map;
  * @create2021-02-25-11:20
  */
 public final class GameMsgRecognizer {
+
+
+    private static  Logger LOGGER = LogManager.getLogger(GameMsgRecognizer.class);
+
+
     /**
      * 消息编号 -> 消息对象字典
      */
@@ -23,40 +31,86 @@ public final class GameMsgRecognizer {
     static private final Map<Class<?>, Integer> _clazzAndMsgCodeMap = new HashMap<>();
 
 
-
-
-    private GameMsgRecognizer(){
+    private GameMsgRecognizer() {
     }
 
 
+    public static void intit() {
+        Class<?>[] innerClazzArray = GameMsgProtocol.class.getDeclaredClasses();
 
-    public  static void intit(){
-        _msgCodeAndMsgObjMap.put(GameMsgProtocol.MsgCode.USER_ENTRY_CMD_VALUE, GameMsgProtocol.UserEntryCmd.getDefaultInstance());
-        _msgCodeAndMsgObjMap.put(GameMsgProtocol.MsgCode.WHO_ELSE_IS_HERE_CMD_VALUE, GameMsgProtocol.WhoElseIsHereCmd.getDefaultInstance());
-        _msgCodeAndMsgObjMap.put(GameMsgProtocol.MsgCode.USER_MOVE_TO_CMD_VALUE, GameMsgProtocol.UserMoveToCmd.getDefaultInstance());
 
-        _clazzAndMsgCodeMap.put(GameMsgProtocol.UserEntryResult.class, GameMsgProtocol.MsgCode.USER_ENTRY_RESULT_VALUE);
-        _clazzAndMsgCodeMap.put(GameMsgProtocol.WhoElseIsHereResult.class, GameMsgProtocol.MsgCode.WHO_ELSE_IS_HERE_RESULT_VALUE);
-        _clazzAndMsgCodeMap.put(GameMsgProtocol.UserMoveToResult.class, GameMsgProtocol.MsgCode.USER_MOVE_TO_RESULT_VALUE);
-        _clazzAndMsgCodeMap.put(GameMsgProtocol.UserQuitResult.class, GameMsgProtocol.MsgCode.USER_QUIT_RESULT_VALUE);
+        for (Class<?> innerClass : innerClazzArray) {
+            if (null == innerClass ||
+                    !GeneratedMessageV3.class.isAssignableFrom(innerClass)) {
+                continue;
+            }
+            //获得内部类名
+            String innerClazzName = innerClass.getSimpleName().toLowerCase();
+
+
+            for (GameMsgProtocol.MsgCode msgCode : GameMsgProtocol.MsgCode.values()) {
+                if (null == msgCode) {
+                    continue;
+                }
+
+                //获得消息编码
+                String msgName = msgCode.name();
+
+                msgName = msgName.replaceAll("_", "").toLowerCase();
+
+                //判断包含的类
+                if (!msgName.startsWith(innerClazzName)) {
+                    continue;
+                }
+
+                try {
+                    Object returnObject = innerClass.getDeclaredMethod("getDefaultInstance").invoke(innerClass);
+
+                    LOGGER.info(
+                            "{} <==> {}",
+                            innerClass.getName(),
+                            msgCode.getNumber()
+                    );
+
+                    _msgCodeAndMsgObjMap.put(
+                            msgCode.getNumber(),
+                            (GeneratedMessageV3) returnObject
+                    );
+
+                    _clazzAndMsgCodeMap.put(
+                            innerClass,
+                            msgCode.getNumber()
+                    );
+
+
+                } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ex) {
+                    ex.printStackTrace();
+                    LOGGER.error(ex.getMessage(), ex);
+                }
+
+            }
+
+
+        }
 
     }
 
 
     /**
      * 根据消息类获取消息编号
+     *
      * @param msgClazz
      * @return
      */
-    public static int getMsgCodeByClazz(Class<?> msgClazz){
-        if(null == msgClazz){
-            return  -1;
+    public static int getMsgCodeByClazz(Class<?> msgClazz) {
+        if (null == msgClazz) {
+            return -1;
         }
         Integer msgCode = _clazzAndMsgCodeMap.get(msgClazz);
 
-        if(null == msgCode){
-            return  -1;
-        }else{
+        if (null == msgCode) {
+            return -1;
+        } else {
             return msgCode;
         }
 
@@ -66,18 +120,18 @@ public final class GameMsgRecognizer {
     /**
      * 根据消息编号获取消息构建器
      */
-    public static Message.Builder getBuilderByMsgCode(int msgCode){
-        if(msgCode < 0){
-            return  null;
+    public static Message.Builder getBuilderByMsgCode(int msgCode) {
+        if (msgCode < 0) {
+            return null;
         }
 
 
         GeneratedMessageV3 defaultMsg = _msgCodeAndMsgObjMap.get(msgCode);
 
-        if(null == defaultMsg){
-            return  null;
-        }else {
-            return  defaultMsg.newBuilderForType();
+        if (null == defaultMsg) {
+            return null;
+        } else {
+            return defaultMsg.newBuilderForType();
         }
 
     }
