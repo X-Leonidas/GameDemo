@@ -1,4 +1,4 @@
-package cn.xy.herostort;
+package cn.xy.herostort.model;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -16,19 +16,23 @@ public class UserManager {
      */
     static private final Map<Integer, User> _userMap = new HashMap<>();
 
-    public static void addUser(User user){
-        _userMap.putIfAbsent(user.getUserId(),user);
+    public static void addUser(User user) {
+        _userMap.putIfAbsent(user.getUserId(), user);
     }
 
 
-    public  static  void removeUserBuUserId(Integer userId){
+    public static void removeUserBuUserId(Integer userId) {
         _userMap.remove(userId);
     }
 
 
-    public static Collection<User> listUser(){
+    public static Collection<User> listUser() {
         return _userMap.values();
     }
 
+
+    public static User getUserByUserId(Integer userId) {
+        return _userMap.get(userId);
+    }
 
 }

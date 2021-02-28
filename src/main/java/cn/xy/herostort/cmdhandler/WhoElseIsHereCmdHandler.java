@@ -1,7 +1,7 @@
 package cn.xy.herostort.cmdhandler;
 
-import cn.xy.herostort.User;
-import cn.xy.herostort.UserManager;
+import cn.xy.herostort.model.User;
+import cn.xy.herostort.model.UserManager;
 import cn.xy.herostort.msg.GameMsgProtocol;
 import io.netty.channel.ChannelHandlerContext;
 
@@ -27,6 +27,21 @@ public class WhoElseIsHereCmdHandler implements ICmdHandler<GameMsgProtocol.WhoE
 
             userInfoBuilder.setUserId(currUser.getUserId());
             userInfoBuilder.setHeroAvatar(currUser.getHeroAvatar());
+
+
+
+
+            // 构建移动状态
+            GameMsgProtocol.WhoElseIsHereResult.UserInfo.MoveState.Builder
+                    mvStateBuilder = GameMsgProtocol.WhoElseIsHereResult.UserInfo.MoveState.newBuilder();
+            mvStateBuilder.setFromPosX(currUser.getMoveState().fromPosX);
+            mvStateBuilder.setFromPosY(currUser.getMoveState().fromPosY);
+            mvStateBuilder.setToPosX(currUser.getMoveState().toPosX);
+            mvStateBuilder.setToPosY(currUser.getMoveState().toPosY);
+            mvStateBuilder.setStartTime(currUser.getMoveState().startTime);
+            userInfoBuilder.setMoveState(mvStateBuilder);
+
+
 
             resultBulider.addUserInfo(userInfoBuilder);
 

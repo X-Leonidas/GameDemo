@@ -1,18 +1,15 @@
 package cn.xy.herostort;
 
+import cn.xy.herostort.cmdhandler.CmdHandlerFactory;
 import cn.xy.herostort.cmdhandler.ICmdHandler;
-import cn.xy.herostort.cmdhandler.UserEntryCmdHandler;
-import cn.xy.herostort.cmdhandler.WhoElseIsHereCmdHandler;
+import cn.xy.herostort.model.UserManager;
 import cn.xy.herostort.msg.GameMsgProtocol;
 import com.google.protobuf.GeneratedMessageV3;
-import com.google.protobuf.Message;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.AttributeKey;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.util.Collection;
 
 /**
  * @author XiangYu
@@ -44,12 +41,13 @@ public class GameMsgHandler extends SimpleChannelInboundHandler<Object> {
         }
         try {
             super.handlerRemoved(ctx);
+            Broadcaster.removeChannel(ctx.channel());
+
             Integer userId = (Integer) ctx.channel().attr(AttributeKey.valueOf("userId")).get();
             if (null == userId) {
                 return;
             }
             UserManager.removeUserBuUserId(userId);
-            Broadcaster.removeChannel(ctx.channel());
 
             GameMsgProtocol.UserQuitResult.Builder requestBuilder = GameMsgProtocol.UserQuitResult.newBuilder();
             requestBuilder.setQuitUserId(userId);

@@ -1,8 +1,8 @@
 package cn.xy.herostort.cmdhandler;
 
 import cn.xy.herostort.Broadcaster;
-import cn.xy.herostort.User;
-import cn.xy.herostort.UserManager;
+import cn.xy.herostort.model.User;
+import cn.xy.herostort.model.UserManager;
 import cn.xy.herostort.msg.GameMsgProtocol;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.AttributeKey;

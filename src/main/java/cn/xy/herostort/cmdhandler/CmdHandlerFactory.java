@@ -1,6 +1,5 @@
-package cn.xy.herostort;
+package cn.xy.herostort.cmdhandler;
 
-import cn.xy.herostort.cmdhandler.ICmdHandler;
 import cn.xy.herostort.util.PackageUtil;
 import com.google.protobuf.GeneratedMessageV3;
 import org.apache.logging.log4j.LogManager;

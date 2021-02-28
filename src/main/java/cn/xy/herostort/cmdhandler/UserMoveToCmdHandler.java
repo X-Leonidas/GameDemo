@@ -1,6 +1,8 @@
 package cn.xy.herostort.cmdhandler;
 
 import cn.xy.herostort.Broadcaster;
+import cn.xy.herostort.model.User;
+import cn.xy.herostort.model.UserManager;
 import cn.xy.herostort.msg.GameMsgProtocol;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.AttributeKey;
@@ -22,15 +24,29 @@ public class UserMoveToCmdHandler implements ICmdHandler<GameMsgProtocol.UserMov
         if (null == userId) {
             return;
         }
+        // 获取已有用户
+        User existUser = UserManager.getUserByUserId(userId);
 
-        GameMsgProtocol.UserMoveToResult.Builder requestBuilder = GameMsgProtocol.UserMoveToResult.newBuilder();
+        long nowTime = System.currentTimeMillis();
+
+        existUser.getMoveState().fromPosX = cmd.getMoveFromPosX();
+        existUser.getMoveState().fromPosY = cmd.getMoveFromPosY();
+        existUser.getMoveState().toPosX = cmd.getMoveToPosX();
+        existUser.getMoveState().toPosY = cmd.getMoveToPosY();
+        existUser.getMoveState().startTime = nowTime;
 
 
-        requestBuilder.setMoveUserId(userId);
-        requestBuilder.setMoveToPosX(cmd.getMoveToPosX());
-        requestBuilder.setMoveToPosY(cmd.getMoveToPosY());
+        GameMsgProtocol.UserMoveToResult.Builder resultBuilder = GameMsgProtocol.UserMoveToResult.newBuilder();
 
-        GameMsgProtocol.UserMoveToResult newRequest = requestBuilder.build();
+
+        resultBuilder.setMoveUserId(userId);
+        resultBuilder.setMoveToPosX(cmd.getMoveToPosX());
+        resultBuilder.setMoveToPosY(cmd.getMoveToPosY());
+        resultBuilder.setMoveToPosX(cmd.getMoveToPosX());
+        resultBuilder.setMoveToPosY(cmd.getMoveToPosY());
+        resultBuilder.setMoveStartTime(nowTime);
+
+        GameMsgProtocol.UserMoveToResult newRequest = resultBuilder.build();
         Broadcaster.broadcast(newRequest);
     }
 }
