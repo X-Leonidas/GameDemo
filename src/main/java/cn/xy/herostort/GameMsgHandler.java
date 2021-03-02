@@ -69,26 +69,7 @@ public class GameMsgHandler extends SimpleChannelInboundHandler<Object> {
             logger.debug("为空");
             return;
         }
-
-        logger.info("收到客户端消息, msgClazz = {}, msgBody = {}",
-                msg.getClass().getSimpleName(),
-                msg);
-        try {
-
-            ICmdHandler<? extends GeneratedMessageV3> cmdHandler = CmdHandlerFactory.creat(msg.getClass());
-            if(null != cmdHandler){
-                cmdHandler.handle(channelHandlerContext,cast(msg));
-            }
-        } catch (Exception ex) {
-            logger.error(ex.getMessage(), ex);
-        }
-
+       MainThreadProcessor.getInstance().process(channelHandlerContext,msg);
     }
-    static private <Tcmd extends GeneratedMessageV3> Tcmd cast(Object object){
-        if(null == object){
-            return  null;
-        }
 
-        return  (Tcmd)object;
-    }
 }

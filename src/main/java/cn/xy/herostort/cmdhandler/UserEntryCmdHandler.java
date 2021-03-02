@@ -15,22 +15,20 @@ public class UserEntryCmdHandler implements  ICmdHandler<GameMsgProtocol.UserEnt
     @Override
     public void handle(ChannelHandlerContext channelHandlerContext, GameMsgProtocol.UserEntryCmd cmd){
 
-        //用户登录
-        int userId = cmd.getUserId();
-        String heroAvatar = cmd.getHeroAvatar();
 
-        User newUser = new User();
-        newUser.setUserId(userId);
-        newUser.setHeroAvatar(heroAvatar);
-        UserManager.addUser(newUser);
 
-        // 将用户 Id 保存至 Session
-        channelHandlerContext.channel().attr(AttributeKey.valueOf("userId")).set(userId);
+        // 获取用户 Id
+        Integer userId = (Integer) channelHandlerContext.channel().attr(AttributeKey.valueOf("userId")).get();
+        if (null == userId) {
+            return;
+        }
+        User existUser = UserManager.getUserByUserId(userId);
 
         GameMsgProtocol.UserEntryResult.Builder resultBulider = GameMsgProtocol.UserEntryResult.newBuilder();
 
         resultBulider.setUserId(userId);
-        resultBulider.setHeroAvatar(heroAvatar);
+        resultBulider.setHeroAvatar(existUser.getHeroAvatar());
+        resultBulider.setUserName(existUser.getUserName());
 
         GameMsgProtocol.UserEntryResult newResult = resultBulider.build();
         Broadcaster.broadcast(newResult);
